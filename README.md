@@ -12,7 +12,7 @@ Build machine:
 - Node.js LTS and npm
 - Android Studio for Android APK builds
 - Android SDK installed through Android Studio
-- Java runtime from Android Studio, or a compatible JDK
+- JDK 21 for Android builds (JDK 25 is not supported by this project's Gradle setup)
 
 The other device does not need Node.js, npm, VS Code, or the source code. It only needs the APK or Windows installer.
 
@@ -69,10 +69,10 @@ The build may show a warning about large JavaScript chunks. That warning does no
 
 1. Install Android Studio.
 2. Open Android Studio once and install the Android SDK and SDK Platform tools.
-3. Confirm that this folder exists, or adjust the path for your installation:
+3. Install or select a JDK 21. Set `JAVA_HOME` to its folder before building. For example:
 
 ```text
-C:\Program Files\Android\Android Studio\jbr
+C:\Path\To\JDK-21
 ```
 
 ### Build commands
@@ -84,7 +84,7 @@ cd C:\Sharma\attendance-app
 npm run build
 npx cap sync android
 
-$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+$env:JAVA_HOME='C:\Path\To\JDK-21'
 $env:Path="$env:JAVA_HOME\bin;$env:Path"
 
 Push-Location android
@@ -98,6 +98,12 @@ The APK is created here:
 android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
+The launcher icon is an attendance calendar/check design. Its adaptive foreground is `android/app/src/main/res/drawable/ic_attendance_foreground.xml`; keep the density-specific launcher images in the `mipmap-*` folders in sync when changing the design.
+
+### Update an existing Android installation
+
+Before each update, increase `versionCode` and `versionName` in `android/app/build.gradle`. Keep the same `applicationId` and signing key, then build and install the new APK over the existing app. Do not uninstall first; that can delete attendance data. Keep the debug signing key on the build machine, or use the same private release key for release builds.
+
 ### Install the APK on an Android device
 
 1. Copy `app-debug.apk` to the phone or tablet.
@@ -109,12 +115,14 @@ The debug APK is suitable for private sharing and testing. A Play Store release 
 
 ### Android build troubleshooting
 
-If Gradle says that Java or `JAVA_HOME` is missing, run:
+If Gradle says that Java or `JAVA_HOME` is missing, set it to your JDK 21 folder:
 
 ```powershell
-$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+$env:JAVA_HOME='C:\Path\To\JDK-21'
 $env:Path="$env:JAVA_HOME\bin;$env:Path"
 ```
+
+If Gradle reports `Unsupported class file major version 69`, it is running with Java 25. Switch `JAVA_HOME` to JDK 21 and rebuild.
 
 If `Bridge.java` reports a Java error at a line containing only `0`, the installed Capacitor package is corrupted. Reinstall the package first:
 
@@ -177,7 +185,7 @@ C:\Sharma\attendance-app\dist\Attendance Management Setup 0.0.0.exe
 
 You can copy these files to a USB drive or send them through a file-sharing service.
 
-Do not share these folders or files:
+Do not include these in an end-user app distribution:
 
 - The project source folder
 - `src/`
@@ -204,7 +212,7 @@ Do not share these folders or files:
 5. The app then calculates Actual time, Shortage, or Extra.
 6. Download the monthly PDF when required.
 
-Shortage and extra are mutually exclusive in the monthly summary. If compensation extra offsets a shortage, the summary keeps only the applicable net value.
+Monthly extra and shortage offset each other across the whole month, regardless of which happened first. The summary shows only the remaining net shortage or extra; the daily recorded values remain unchanged.
 
 ## 10. Rebuild After Code Changes
 
